@@ -1,0 +1,136 @@
+---------------------------------------------------------
+	Load HIVE table with CSV file			
+---------------------------------------------------------
+**Create tabel & load data 
+
+create table if not exists saurav_tbl
+(
+id string,
+name string,
+marks int
+)
+row format delimited
+fields terminated by ',';
+
+#Data
+
+nano saurav.csv
+1,saurav,100
+2,roshan,200
+
+#load file from local to hive table
+
+LOAD DATA LOCAL INPATH '/home/hdoop/saurav.csv' overwrite into table saurav_tbl;
+
+#load file from HDFS to hive table
+
+hdfs dfs -put -f saurav.csv /tmp/
+
+LOAD DATA INPATH '/tmp/saurav.csv' overwrite into table saurav_tbl;
+------------------------------------------------------------------------
+------------------------------------------------------------------------
+
+**if there is mismatch in file format expected by table and file which you are ingesting mension it in create statement for hive table 'STORED AS' 
+
+create table if not exists saurav_tbl
+(
+id string,
+name string,
+marks int
+)
+row format delimited
+fields terminated by ','
+STORED AS TEXTFILE;
+
+------------------------------------------------------------------------
+------------------------------------------------------------------------
+
+**How to see file format expected by Hive table
+
+show create table saurav_tbl;
+
+------------------------------------------------------------------------
+**See file/Folders with permissions in linux
+
+ls -ltr /
+
+------------------------------------------------------------------------
+------------------------------------------------------------------------
+#Exports HIve data to HDFS directory
+
+INSERT OVERWRITE DIRECTORY '/tmp/exported_california_data.csv' ROW FORMAT DELIMITED FIELDS TERMINATED BY ',' SELECT * FROM california_housing_data;
+-----------------------------------------------------------------------------
+------------------------------------------------------------------------
+
+#Execute hive query without using hive shell
+
+hive -e "select * from california_housing_data limit 5;"
+-----------------------------------------------------------------------------
+------------------------------------------------------------------------
+
+#Execute set of queries from file
+
+nano query.hql
+hive -f /home/hdoop/Downloads/query.hql 
+-----------------------------------------------------------------------------
+
+#Sort by :-work per reducer
+
+select * from california_housing_data sort by median_house_value limit 5;
+------------------------------------------------------------------------
+------------------------------------------------------------------------
+
+#order by :- collect all data in one reducer and do sort so always use limit in this case otherewise it will overload reducer(i.e. output is produced in single reducer);
+
+select * from california_housing_data order by median_house_value limit 5;
+------------------------------------------------------------------------
+------------------------------------------------------------------------
+
+#cluster by :-is short cut for both distribute by and sort by
+
+select * from california_housing_data cluster by housing_median_age;
+------------------------------------------------------------------------
+------------------------------------------------------------------------
+
+#distributed by
+
+select * from california_housing_data distribute by housing_median_age;
+
+------------------------------------------------------------------------
+------------------------------------------------------------------------
+
+In order to change the average load for a reducer (in bytes):
+-->set hive.exec.reducers.bytes.per.reducer=<number>
+
+In order to limit the maximum number of reducers:
+-->set hive.exec.reducers.max=<number>
+
+In order to set a constant number of reducers:
+-->set mapreduce.job.reduces=<number>
+
+In order to set execution engine;
+-->set hive.execution.engine=mr;
+
+#Dynamic partition & bucketing var
+
+set hive.exec.dynamic.partition=true
+
+set hive.exec.dynamic.partition.mode=strict
+
+set hive.enforce.bucketing=true
+
+------------------------------------------------------------------------
+------------------------------------------------------------------------
+
+select * from users order by name ASC;
+
+select * from users sort by name ASC;
+
+The two queries look almost identical, but if more than one reducer is invoked output will be sorted differantly
+
+set mapred.reduce.tasks=2;
+
+select * from users SORT BY name ASC;
+
+-----------------------------------------------------------------------------
+-----------------------------------------------------------------------------

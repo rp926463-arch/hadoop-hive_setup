@@ -1,0 +1,30 @@
+-----------------------------------------------------------------------------
+-----------------------------------------------------------------------------
+#Adding jar for JSONSerde
+
+#tutorial :--https://github.com/rcongiu/Hive-JSON-Serde
+
+#Download JAR files ::-http://www.congiu.net/hive-json-serde/1.3.8/cdh5/
+
+ADD JAR /home/hdoop/Downloads/json-serde-1.3.8-jar-with-dependencies.jar;
+
+ADD JAR /home/hdoop/Downloads/json-udf-1.3.8-jar-with-dependencies.jar;
+
+
+#Creating table using JsonSerDe
+
+CREATE EXTERNAL TABLE json_table(name string, id bigint, skills array<string>)
+ROW FORMAT SERDE 'org.openx.data.jsonserde.JsonSerDe'
+STORED AS TEXTFILE;
+
+#SAMPLE Json
+
+nano json_file.json
+{"name":"Amit", "id":1, "skills":["Hadoop", "Python"]}
+{"name":"Sumit", "id":2, "skills":["Hadoop", "Hive"]}
+{"name":"Rohit", "id":3, "skills":["Oozie", "Python"]}
+
+LOAD DATA LOCAL INPATH '/home/hdoop/json_file.json' overwrite into table json_table;
+
+-----------------------------------------------------------------------------
+------------------------------------------------------------------------------------

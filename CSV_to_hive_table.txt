@@ -1,0 +1,30 @@
+------------------------------------------------------------------------
+------------------------------------------------------------------------
+
+**Load california housing data
+
+#put file to HDFS from local
+hdfs dfs -put california_housing_train.csv /tmp/
+
+create table if not exists california_housing_data
+(
+longitude DECIMAL(10, 6),
+latitude DECIMAL(10, 6),
+housing_median_age DECIMAL(3, 0),
+total_rooms DECIMAL(10, 0),
+total_bedrooms DECIMAL(10, 0),
+population DECIMAL(10, 0),
+households DECIMAL(10, 0),
+median_income DECIMAL(10, 6),
+median_house_value DECIMAL(10, 0)
+) 
+row format delimited
+fields terminated by ','
+STORED AS TEXTFILE
+tblproperties("skip.header.line.count"="1");
+
+
+LOAD DATA INPATH '/tmp/california_housing_train.csv' overwrite into table california_housing_data;
+
+------------------------------------------------------------------------
+-----------------------------------------------------------------------------

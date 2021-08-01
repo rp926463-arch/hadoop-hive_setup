@@ -1,0 +1,102 @@
+------------------------------------------------------------------------------------
+------------------------------------------------------------------------------------
+
+#Hive Optimiations
+
+1)use ORC/parquet file format
+2)Bucketing/partioning
+3)Broadcast join/SMB join
+
+As join requires data to be shuffled accross nodes, use filtering and projection as early as possible to reduce data before join
+
+e.g.
+instead of select * from users;
+use select name, id from users where age > 20;
+	projection		filtering
+
+4)Compress map/reduce output
+SET mapred.compress.map.output=true;
+SET mapred.output.compress=true;
+
+5)Parallel execution
+Applies to MapReduce engine only that can run in parallel, for e.g. jobs processing differant source tables before join 
+
+SET hive.exec.parallel=true
+
+5)Vectorization
+Vectoried query execution is hive feature that greatly reduces the CPU usage for typical query operations like scans, filters, aggregates and joins.
+
+Vactorized query execution stramlines the operations by processing a blobk of 1024 rows at a time (instead of one row at a time)
+
+Only works with ORCFiles
+
+SET hive.vectorized.execution.enabled=true;
+SET hive.vectorized.execution.reduce.enabled=true;
+
+6)Solve Small Files problem
+--Sometimes there are 100s of small files e.g.100KB which is very less than the block sie
+--Unnecessary blocks will be occupied
+--Unnecessary shuffle and sort will happen
+--To avoid this we have to merge the files in table on periodic basis
+--Run query ALTER TABLE TABLENAME CONCATENATE;
+--This query will merge all small files into 256 MB(Block size) file each
+------------------------------------------------------------------------------------
+------------------------------------------------------------------------------------
+#HIVE CBO(cost based optimization)
+
+CBO reduces shuffle and does below optimization
+--How to order join
+--What algorithm to use for join
+--should intermediate result persisted or should be recomputed
+--the degree of parallelism at any operator
+(no. of reducers to use)
+--Semi join selection 
+
+#below paramteters needs to be set to enable CBO
+set hive.cbo.enable=true;
+set hive.compute.query.using.stats=true;
+set hive.stats.fetch.column.stats=true
+set hive.stats.fetch.partition.stats=true;
+
+------------------------------------------------------------------------------------
+------------------------------------------------------------------------------------
+#Working with .hiverc file
+
+In $HOME/.hiverc file, one can specify a file of commands for the CLI to run as it starts, before showing you the prompt. Hive automatically looks for a file nmaed .hiverc in your home directory and runs the commands it contains, if any.These files are convenient for commands that you run frequently, such as setting system properties (see"Variables and Properties" on page 31) or adding Java archives (JAR files) of custom HIve extensions to Hadoop's distributed cache.
+
+set hive.cli.print.current.db=true;
+set hive.exec.mode.local.auto=true;
+
+------------------------------------------------------------------------------------
+-----------------------------------------------------------------------------
+
+**How to choose column for partitioning
+
+always choose column using which after partitioning file size in partition directory should be at least 128MB(Block size)
+
+e.g. 1TB = 1024GB
+
+partition on date column --> have 1800 unique dates
+
+1024000MB/1800 --> 568 MB
+
+568/128 --> 5 files in one partition directory
+
+**if whatever column you are choosing for Bucketing might have duplicates which will lead data skewness
+
+to avoid this bucketing should be on column where there is no duplicates
+
+**How can we decide No. of buckets in hive table
+
+1Way
+--Lets take a scenario Where table size is: 2300 MB, HDFS Block Size: 128 MB
+--Now, Divide 2300/128=17.96
+--Now, remember number of bucket will always be in the power of 2.
+--So we need to find n such that 2^n > 17.96
+--n=5
+--So, I am going to use number of buckets as 2^5=32
+
+Other WAY
+--toltal_size/block_size = no. of buckets
+
+==>Note atleast keep bucket_size in range of [bs/2, bs(block_size)]

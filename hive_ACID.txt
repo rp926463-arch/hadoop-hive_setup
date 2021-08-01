@@ -1,0 +1,28 @@
+#ACID properties on HIVE tables:::
+
+TBLEPROPERTIES('transactional'='true'); --> enables ACID properties on hive table bydefault it is active in Hrotonwork sandbox
+
+#structure limitations
+1)table must be bucketed
+2)table cannot be sorted
+3)requires ORC file
+
+CREATE TABLE T(a int, b int)
+CLUSTERED BY (b) INTO 8 BUCKETS STORED AS ORC
+TBLEPROPERTIES('transactional'='true')
+
+-->Not all tables support transactional semantics
+-->Non ACID tables must be re-created
+
+------------------------------------------------------------------------------------
+------------------------------------------------------------------------------------
+
+MERGE INTO TARGET T
+USING SOURCE S ON T.ID=S.ID
+UPDATE SET T.value = S.value
+WHEN NOT MATCHED INSERT (ID,State, Value)
+VALUES(S.ID, S.State, S.Value)
+
+------------------------------------------------------------------------------------
+------------------------------------------------------------------------------------
+

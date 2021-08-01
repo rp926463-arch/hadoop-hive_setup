@@ -1,0 +1,18 @@
+------------------------------------------------------------------------------------
+------------------------------------------------------------------------------------
+**Hrotonworks settings for sandbox
+
+Tez container size = 512MB
+tez.am.resource.memory.mb = 512MB
+tez.runtime.io.sort.mb = 256MB
+
+#where to see logs in hrotonworks sandbox
+cd /var/log/hive
+ls -ltr
+tail -f hiveserver2.log
+-->restart service
+copy paste entire stuff in notepad & search for error
+
+------------------------------------------------------------------------------------
+------------------------------------------------------------------------------------
+

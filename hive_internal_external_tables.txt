@@ -1,0 +1,52 @@
+**Internal & External tabel
+
+create database types_of_table;
+
+create table if not exists internal_tbl
+(
+id int,
+name string,
+marks int
+)
+row format delimited
+fields terminated by ','
+STORED AS TEXTFILE;
+
+
+create external table if not exists external_tbl
+(
+id string,
+name string,
+marks int
+)
+row format delimited
+fields terminated by ','
+STORED AS TEXTFILE
+LOCATION '/tmp/exttable';
+
+show tables;
+
+LOAD DATA INPATH '/tmp/saurav.csv' overwrite into table internal_tbl;
+
+LOAD DATA INPATH '/tmp/saurav.csv' overwrite into table external_tbl;
+
+select * from internal_tbl;
+
+select * from external_tbl;
+
+show create table internal_tbl;
+
+show create table external_tbl;
+
+drop table internal_tbl;
+
+drop table external_tbl;
+
+hdfs dfs -ls /user/hive/warehouse/types_of_table.db/internal_tbl
+
+hdfs dfs -ls /tmp/exttable
+
+
+i.e. if we drop internal table schema as well as data will be deleted but if we drop external table only schema gets deleted but not data.
+------------------------------------------------------------------------
+------------------------------------------------------------------------
