@@ -1,0 +1,123 @@
+Required file properties::
+_Get Read fast
+_Get Written fast
+_Be splitable
+_Support schema evolution, allowing us to change schema of file
+_support advance compression through various available compression codecs(Bzip2, LZO, Snappy, etc)
+
+Two types of file formats
+1)Open data format	
+e.g.csv,txt -->Raw data	, xml ,json
+
+2)Proprietory format(dependent on specific software)
+e.g. .xls,.sql
+
+text file(CSV,TSV)
+-->above open data formats will incure more storage cost & processing time for hadoop
+-->Good write performance but slow reads
+-->Do not support block compression
+-->limited support for schema evolution(new fields can only be appended but old fields can never be deleted)
+
+Sequence files(json)
+-->Each record stored as key value pair in binary format
+-->Good write performance compared to text files.
+--Support block compression
+-->splitable
+-->limited support for schema evolution(new fields can only be appended but old fields can never be deleted)
+as do not store metadata like text files
+
+Hadoop file formats
+**gzip,zip --> but these are not splitable(as per hadoop functionality we need to split data in blocks)
+
+**mostly used in hadoop
+1)avro
+--It is File format + serialization & deserialization framework
+--it use json format to store metadata and serialize data in compact binary format
+--Average read/write performance
+--.avro
+--compression ratio is 50-55%
+--splitable
+--schema stored seperately in avsc(avero schema) file
+--Schema evolution advantage--Even if one column data doesn't appear automatically hive will default it to some value
+--default value is specified in avsc file
+
+Speciality : designed to support full schema evolution
+#Not optimised for itense I/O operations as arg read/write performance
+
+
+***Columnar file Formats
+Not only storing rows of data adjacent to each other we also store column value adjacent to each other
+
+1)RC file:
+--first columunar format adopted by hadoop
+--Flat files consisting of binary key/value pairs and it shares much similarity with sequence file
+--was developed for faster reads but with compromise with write performance
+--splitable
+#No schema evalution
+--Provides significant block compression
+
+2)ORC
+--better version of RC file
+--Optimized row Columnar
+--Splitable
+--reduces the size of original data upto 75%
+--ORC file contains rows data in groups called Stripes along with file footer
+--At the end of file a postscript holds compression parameters and size of compressed footer
+--default size of strip is 250 MB. large stripe size enable large, efficient reads from HDFS
+--The file footer contains a list of stripes in the file, the number of rows per stripe, and each column data type. it also contains column-level aggregated count, min, max, sum
+--generally in ORC strip size is 256MB
+--Index data includes min, max value for each column and row positions within each column
+
+#Does not support schema evolution
+---------------
+|Index data   |
+---------------
+|	      |
+|  Row Data   |
+|	      |
+---------------
+|Stripe Footer|
+---------------
+---------------
+|Index data   |
+---------------
+|	      |
+|  Row Data   |
+|	      |
+---------------
+|Stripe Footer|
+---------------
+---------------
+| File Footer |
+---------------
+---------------
+| Postscript  |
+---------------
+
+id,name,marks
+1,sourav,10
+2,gourav,20
+
+3)parquet
+--is an open source file format, designed for efficient as well as performant flat columnar storage format of data compared to row based files like CSV/TSV files.
+--Where your query is only hitting on columns use parquet
+--faster read with slow writes
+--support compression mostly with snappy algo
+--conditionaly splitable
+--Limitead schema evolution
+
+Row gourp is like stripe
+
+Row Group
+<Col1 chunk1 + Col metadata>
+<Col2 chunk1 + Col metadata>
+<Col3 chunk1 + Col metadata>
+ 
+id,1,2
+name,sourav,gaurav
+marks,10,20
+
+==>Note
+Hive more optimised for ORC as ACID properties work better(update/delete)
+Spark --> Parquet
+
