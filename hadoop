@@ -1,0 +1,905 @@
+Windows Hadoop Installation :-
+https://medium.com/analytics-vidhya/hadoop-setting-up-a-single-node-cluster-in-windows-4221aab69aa6
+
+Ubuntu Hadoop Installation :-
+https://phoenixnap.com/kb/install-hadoop-ubuntu
+
+Install Java
+sudo apt install openjdk-8-jdk -y
+tiP : follow above blog with same Java version Java 1.8.0
+
+STEPS:
+
+Download file : https://archive.apache.org/dist/hadoop/common/hadoop-3.2.1/hadoop-3.2.1.tar.gz
+
+tar xzf hadoop-3.2.1.tar.gz
+
+sudo nano .bashrc
+
+#Hadoop Related Options
+export HADOOP_HOME=/home/hdoop/Downloads/hadoop-3.2.1
+export HADOOP_INSTALL=$HADOOP_HOME
+export HADOOP_MAPRED_HOME=$HADOOP_HOME
+export HADOOP_COMMON_HOME=$HADOOP_HOME
+export HADOOP_HDFS_HOME=$HADOOP_HOME
+export YARN_HOME=$HADOOP_HOME
+export HADOOP_COMMON_LIB_NATIVE_DIR=$HADOOP_HOME/lib/native
+export PATH=$PATH:$HADOOP_HOME/sbin:$HADOOP_HOME/bin
+export HADOOP_OPTS="$HADOOP_OPTS -Djava.library.path=/home/hdoop/Downloads/hadoop-3.2.1/lib/"
+
+source ~/.bashrc
+
+
+sudo nano $HADOOP_HOME/etc/hadoop/hadoop-env.sh
+
+export JAVA_HOME=/usr/lib/jvm/java-8-openjdk-amd64
+
+
+sudo nano $HADOOP_HOME/etc/hadoop/core-site.xml
+**core-site.xml
+<configuration>
+<property>
+  <name>hadoop.tmp.dir</name>
+  <value>/home/hdoop/Downloads/hadoop-3.2.1/tmpdata</value>
+</property>
+<property>
+  <name>fs.default.name</name>
+  <value>hdfs://127.0.0.1:9000</value>
+</property>
+</configuration>
+
+
+
+sudo nano $HADOOP_HOME/etc/hadoop/hdfs-site.xml
+**hdfs-site.xml
+<configuration>
+<property>
+  <name>dfs.data.dir</name>
+  <value>/home/hdoop/Downloads/dfsdata/namenode</value>
+</property>
+<property>
+  <name>dfs.data.dir</name>
+  <value>/home/hdoop/Downloads/dfsdata/datanode</value>
+</property>
+<property>
+  <name>dfs.replication</name>
+  <value>1</value>
+</property>
+</configuration>
+
+
+sudo nano $HADOOP_HOME/etc/hadoop/mapred-site.xml
+**mapred-site.xml
+<configuration> 
+<property> 
+  <name>mapreduce.framework.name</name> 
+  <value>yarn</value> 
+</property> 
+</configuration>
+
+
+sudo nano $HADOOP_HOME/etc/hadoop/yarn-site.xml
+**yarn-site.xml
+<configuration>
+<property>
+  <name>yarn.nodemanager.aux-services</name>
+  <value>mapreduce_shuffle</value>
+</property>
+<property>
+  <name>yarn.nodemanager.aux-services.mapreduce.shuffle.class</name>
+  <value>org.apache.hadoop.mapred.ShuffleHandler</value>
+</property>
+<property>
+  <name>yarn.resourcemanager.hostname</name>
+  <value>127.0.0.1</value>
+</property>
+<property>
+  <name>yarn.acl.enable</name>
+  <value>0</value>
+</property>
+<property>
+  <name>yarn.nodemanager.env-whitelist</name>   
+  <value>JAVA_HOME,HADOOP_COMMON_HOME,HADOOP_HDFS_HOME,HADOOP_CONF_DIR,CLASSPATH_PERPEND_DISTCACHE,HADOOP_YARN_HOME,HADOOP_MAPRED_HOME</value>
+</property>
+</configuration>
+
+
+
+hdfs namenode -format
+
+cd /home/hdoop/Downloads/hadoop-3.2.1/sbin
+
+./start-dfs.sh
+
+./start-yarn.sh
+
+jps
+
+hadoop version
+
+NameNode : http://localhost:9870
+
+DatNode : http://localhost:9864
+
+YARN : http://localhost:8088
+
+
+#get namenode out of safe mode
+hdfs dfsadmin -safemode leave
+______________________________________________________________________________
+HIVE installation
+
+https://phoenixnap.com/kb/install-hive-on-ubuntu
+
+==>Hadoop 3.2.1 Hadoop version is compatible with the Hive 3.1.2 release.
+
+wget https://downloads.apache.org/hive/hive-3.1.2/apache-hive-3.1.2-bin.tar.gz
+
+tar xzf apache-hive-3.1.2-bin.tar.gz
+
+sudo nano .bashrc
+
+export HIVE_HOME=/home/hdoop/Downloads/apache-hive-3.1.2-bin
+export PATH=$PATH:$HIVE_HOME/bin
+
+source ~/.bashrc
+
+sudo nano $HIVE_HOME/bin/hive-config.sh
+
+export HADOOP_HOME=/home/hdoop/Downloads/hadoop-3.2.1
+
+
+hdfs dfs -mkdir /tmp
+
+hdfs dfs -chmod g+w /tmp
+
+hdfs dfs -ls /
+
+hdfs dfs -mkdir -p /user/hive/warehouse
+
+hdfs dfs -chmod g+w /user/hive/warehouse
+
+hdfs dfs -ls /user/hive
+
+cd $HIVE_HOME/conf
+
+cp hive-default.xml.template hive-site.xml
+
+rm $HIVE_HOME/lib/guava-19.0.jar
+
+cp $HADOOP_HOME/share/hadoop/hdfs/lib/guava-27.0-jre.jar $HIVE_HOME/lib/
+
+**Initiate Schema::
+$HIVE_HOME/bin/schematool -dbType derby -initSchema
+
+
+LAUNCH HIVE::::
+cd /home/hdoop/Downloads/apache-hive-3.1.2-bin/bin
+$hive
+
+
+______________________________________________________________________________
+______________________________________________________________________________
+
+create database ineuron_db;
+
+describe database ineuron_db;
+
+drop database if exists ineuron_db cascade;
+--cascade will drop all the tables inside database also
+
+create database ineuron_db location '/tmp/hivedb';
+
+create table if not exists emp_details
+(
+emp_name string,
+unit string,
+exp int,
+location string
+)
+row format delimited fields terminated by ',';
+
+show create table emp_details;
+
+explain select * from emp_details limit 5;
+
+alter table emp_details rename to employee_details;
+
+alter table emp_details change column emp_name emp_name string COMMENT 'Employee Name' ALTER unit;
+
+---------------------------------------------------------
+	Load HIVE table with CSV file			
+---------------------------------------------------------
+**Create tabel & load data 
+
+create table if not exists saurav_tbl
+(
+id string,
+name string,
+marks int
+)
+row format delimited
+fields terminated by ',';
+
+#Data
+
+nano saurav.csv
+1,saurav,100
+2,roshan,200
+
+#load file from local to hive table
+
+LOAD DATA LOCAL INPATH '/home/hdoop/saurav.csv' overwrite into table saurav_tbl;
+
+#load file from HDFS to hive table
+
+hdfs dfs -put -f saurav.csv /tmp/
+
+LOAD DATA INPATH '/tmp/saurav.csv' overwrite into table saurav_tbl;
+------------------------------------------------------------------------
+------------------------------------------------------------------------
+
+**if there is mismatch in file format expected by table and file which you are ingesting mension it in create statement for hive table 'STORED AS' 
+
+create table if not exists saurav_tbl
+(
+id string,
+name string,
+marks int
+)
+row format delimited
+fields terminated by ','
+STORED AS TEXTFILE;
+
+------------------------------------------------------------------------
+------------------------------------------------------------------------
+
+**How to see file format expected by Hive table
+
+show create table saurav_tbl;
+
+------------------------------------------------------------------------
+**See file/Folders with permissions in linux
+
+ls -ltr /
+
+------------------------------------------------------------------------
+------------------------------------------------------------------------
+
+**Internal & External tabel
+
+create database types_of_table;
+
+create table if not exists internal_tbl
+(
+id int,
+name string,
+marks int
+)
+row format delimited
+fields terminated by ','
+STORED AS TEXTFILE;
+
+
+create external table if not exists external_tbl
+(
+id string,
+name string,
+marks int
+)
+row format delimited
+fields terminated by ','
+STORED AS TEXTFILE
+LOCATION '/tmp/exttable';
+
+show tables;
+
+LOAD DATA INPATH '/tmp/saurav.csv' overwrite into table internal_tbl;
+
+LOAD DATA INPATH '/tmp/saurav.csv' overwrite into table external_tbl;
+
+select * from internal_tbl;
+
+select * from external_tbl;
+
+show create table internal_tbl;
+
+show create table external_tbl;
+
+drop table internal_tbl;
+
+drop table external_tbl;
+
+hdfs dfs -ls /user/hive/warehouse/types_of_table.db/internal_tbl
+
+hdfs dfs -ls /tmp/exttable
+
+
+i.e. if we drop internal table schema as well as data will be deleted but if we drop external table only schema gets deleted but not data.
+------------------------------------------------------------------------
+------------------------------------------------------------------------
+
+**Load california housing data
+
+#put file to HDFS from local
+hdfs dfs -put california_housing_train.csv /tmp/
+
+create table if not exists california_housing_data
+(
+longitude DECIMAL(10, 6),
+latitude DECIMAL(10, 6),
+housing_median_age DECIMAL(3, 0),
+total_rooms DECIMAL(10, 0),
+total_bedrooms DECIMAL(10, 0),
+population DECIMAL(10, 0),
+households DECIMAL(10, 0),
+median_income DECIMAL(10, 6),
+median_house_value DECIMAL(10, 0)
+) 
+row format delimited
+fields terminated by ','
+STORED AS TEXTFILE
+tblproperties("skip.header.line.count"="1");
+
+
+LOAD DATA INPATH '/tmp/california_housing_train.csv' overwrite into table california_housing_data;
+
+------------------------------------------------------------------------
+-----------------------------------------------------------------------------
+#Exports HIve data to HDFS directory
+
+INSERT OVERWRITE DIRECTORY '/tmp/exported_california_data.csv' ROW FORMAT DELIMITED FIELDS TERMINATED BY ',' SELECT * FROM california_housing_data;
+-----------------------------------------------------------------------------
+------------------------------------------------------------------------
+
+#Execute hive query without using hive shell
+
+hive -e "select * from california_housing_data limit 5;"
+-----------------------------------------------------------------------------
+------------------------------------------------------------------------
+
+#Execute set of queries from file
+
+nano query.hql
+hive -f /home/hdoop/Downloads/query.hql 
+-----------------------------------------------------------------------------
+
+#Sort by :-work per reducer
+
+select * from california_housing_data sort by median_house_value limit 5;
+------------------------------------------------------------------------
+------------------------------------------------------------------------
+
+#order by :- collect all data in one reducer and do sort so always use limit in this case otherewise it will overload reducer(i.e. output is produced in single reducer);
+
+select * from california_housing_data order by median_house_value limit 5;
+------------------------------------------------------------------------
+------------------------------------------------------------------------
+
+#cluster by :-is short cut for both distribute by and sort by
+
+select * from california_housing_data cluster by housing_median_age;
+------------------------------------------------------------------------
+------------------------------------------------------------------------
+
+#distributed by
+
+select * from california_housing_data distribute by housing_median_age;
+
+------------------------------------------------------------------------
+------------------------------------------------------------------------
+
+In order to change the average load for a reducer (in bytes):
+-->set hive.exec.reducers.bytes.per.reducer=<number>
+
+In order to limit the maximum number of reducers:
+-->set hive.exec.reducers.max=<number>
+
+In order to set a constant number of reducers:
+-->set mapreduce.job.reduces=<number>
+
+In order to set execution engine;
+-->set hive.execution.engine=mr;
+
+#Dynamic partition & bucketing var
+
+set hive.exec.dynamic.partition=true
+
+set hive.exec.dynamic.partition.mode=strict
+
+set hive.enforce.bucketing=true
+
+------------------------------------------------------------------------
+------------------------------------------------------------------------
+
+select * from users order by name ASC;
+
+select * from users sort by name ASC;
+
+The two queries look almost identical, but if more than one reducer is invoked output will be sorted differantly
+
+set mapred.reduce.tasks=2;
+
+select * from users SORT BY name ASC;
+
+-----------------------------------------------------------------------------
+-----------------------------------------------------------------------------
+#Adding jar for JSONSerde
+
+#tutorial :--https://github.com/rcongiu/Hive-JSON-Serde
+
+#Download JAR files ::-http://www.congiu.net/hive-json-serde/1.3.8/cdh5/
+
+ADD JAR /home/hdoop/Downloads/json-serde-1.3.8-jar-with-dependencies.jar;
+
+ADD JAR /home/hdoop/Downloads/json-udf-1.3.8-jar-with-dependencies.jar;
+
+
+#Creating table using JsonSerDe
+
+CREATE EXTERNAL TABLE json_table(name string, id bigint, skills array<string>)
+ROW FORMAT SERDE 'org.openx.data.jsonserde.JsonSerDe'
+STORED AS TEXTFILE;
+
+#SAMPLE Json
+
+nano json_file.json
+{"name":"Amit", "id":1, "skills":["Hadoop", "Python"]}
+{"name":"Sumit", "id":2, "skills":["Hadoop", "Hive"]}
+{"name":"Rohit", "id":3, "skills":["Oozie", "Python"]}
+
+LOAD DATA LOCAL INPATH '/home/hdoop/json_file.json' overwrite into table json_table;
+
+-----------------------------------------------------------------------------
+------------------------------------------------------------------------------------
+
+#Working with .hiverc file
+
+In $HOME/.hiverc file, one can specify a file of commands for the CLI to run as it starts, before showing you the prompt. Hive automatically looks for a file nmaed .hiverc in your home directory and runs the commands it contains, if any.These files are convenient for commands that you run frequently, such as setting system properties (see"Variables and Properties" on page 31) or adding Java archives (JAR files) of custom HIve extensions to Hadoop's distributed cache.
+
+set hive.cli.print.current.db=true;
+set hive.exec.mode.local.auto=true;
+
+------------------------------------------------------------------------------------
+-----------------------------------------------------------------------------
+
+#CREATE TABLE with RegexSerDe
+
+#tutorial :- https://www.npntraining.com/blog/hive-serde-regexserde/
+
+CREATE TABLE userlog(
+host string,
+user_name string,
+domain string
+)
+ROW FORMAT SERDE
+'org.apache.hadoop.hive.contrib.serde2.RegexSerDe'
+WITH SERDEPROPERTIES(
+'input.regex' = '(.*)/(.*)@(.*)',
+'output.format.string' = '%1$s %2$s %3$s');
+
+Decoding the create statement
+'input.regex' = '(.*)/(.*)@(.*)', 		--> pattern on ehich data is matched
+'output.format.string' = '%1$s %2$s %3$s'); 	--> The output display format
+
+#SAMPLE FILE
+
+host1/amit@gmail
+host2/sumit@facebook
+host3/raghav@gmail
+host4/rohit@gmail
+
+#LOAD DATA
+LOAD DATA LOCAL INPATH '/home/hdoop/regex_file.txt' overwrite INTO TABLE userlog;
+
+
+#FETCH DATA
+select * from userlog;
+
+------------------------------------------------------------------------------------
+-----------------------------------------------------------------------------
+
+**How to choose column for partitioning
+
+always choose column using which after partitioning file size in partition directory should be at least 128MB(Block size)
+
+e.g. 1TB = 1024GB
+
+partition on date column --> have 1800 unique dates
+
+1024000MB/1800 --> 568 MB
+
+568/128 --> 5 files in one partition directory
+
+**if whatever column you are choosing for Bucketing might have duplicates which will lead data skewness
+
+to avoid this bucketing should be on column where there is no duplicates
+
+**How can we decide No. of buckets in hive table
+
+1Way
+--Lets take a scenario Where table size is: 2300 MB, HDFS Block Size: 128 MB
+--Now, Divide 2300/128=17.96
+--Now, remember number of bucket will always be in the power of 2.
+--So we need to find n such that 2^n > 17.96
+--n=5
+--So, I am going to use number of buckets as 2^5=32
+
+Other WAY
+--toltal_size/block_size = no. of buckets
+
+==>Note atleast keep bucket_size in range of [bs/2, bs(block_size)]
+
+------------------------------------------------------------------------------------
+------------------------------------------------------------------------------------
+#Partitioning
+
+create table if not exists emp_details
+(
+emp_name string,
+unit string,
+exp int,
+location string
+)
+row format delimited fields terminated by ',';
+
+
+load data local inpath '/home/hdoop/saurav.csv' into table emp_details;
+
+create table emp_details_partitioned
+(
+emp_name string,
+unit string,
+exp int
+)
+partitioned by (location string)
+row format delimited  
+fields terminated by ',';
+
+
+**Static partition Insert query::--
+
+insert overwrite table emp_details_partitioned
+partition(location = 'BLR')
+select emp_name, unit, exp from emp_details
+where location = 'BLR';
+
+**Dynamic partition Insert query:::---
+
+set hive.exec.dynamic.partition=true;
+set hive.exec.dynamic.partition.mode=nonstrict;
+
+
+insert overwrite table emp_details_partitioned
+partition(location) select emp_name, unit, exp, location from emp_details;
+
+**DROPIING PARTITIONS FROM emp_details_partitioned TABLE
+alter table emp_details_partitioned drop partition(location='BLR');
+
+------------------------------------------------------------------------------------
+------------------------------------------------------------------------------------
+#File FORMATS
+
+---------------------------
+Creating regular text table
+---------------------------
+create table text_table
+(
+c1 int,
+c2 string,
+c3 int,
+c4 string
+)
+row format delimited
+fields terminated by '|';
+
+**Create File
+nano ratings.dat
+
+1|saurav|100|xyz
+2|roshan|200|pqr
+
+load data local inpath '/home/hdoop/ratings.dat' into table text_table;
+
+
+---------------------------
+Creating SequenceFile table
+---------------------------
+
+create table seq_table
+(
+c1 int,
+c2 string,
+c3 int,
+c4 string
+)
+stored as SEQUENCEFILE;
+
+---------------------------
+Creating RC Format table
+---------------------------
+
+create table rc_table
+(
+c1 int,
+c2 string,
+c3 int,
+c4 string
+)
+stored as RCFILE;
+
+---------------------------
+Creating Parquet File table
+---------------------------
+
+create table prq_table
+(
+c1 int,
+c2 string,
+c3 int,
+c4 string
+)
+stored as PARQUET;
+
+---------------------------
+Creating ORC Format table
+---------------------------
+
+create table orc_table
+(
+c1 int,
+c2 string,
+c3 int,
+c4 string
+)
+stored as ORC;
+
+----------------------------------------
+Loading All the tables in a single pass
+----------------------------------------
+
+FROM text_table
+INSERT OVERWRITE TABLE seq_table SELECT *
+INSERT OVERWRITE TABLE rc_table SELECT *
+INSERT OVERWRITE TABLE prq_table SELECT *
+INSERT OVERWRITE TABLE orc_table SELECT *;
+
+select * from seq_table;
+
+select * from rc_table;
+
+select * from prq_table;
+
+select * from orc_table;
+
+----------------------------------------
+Comparing sizes of loaded tables
+----------------------------------------
+
+describe formatted orc_table;
+
+hdfs dfs -ls /user/hive/warehouse/file_format.db/text_table;
+
+hdfs dfs -ls /user/hive/warehouse/file_format.db/seq_table;
+
+hdfs dfs -ls /user/hive/warehouse/file_format.db/rc_table;
+
+hdfs dfs -ls /user/hive/warehouse/file_format.db/prq_table;
+
+hdfs dfs -ls /user/hive/warehouse/file_format.db/orc_table;
+
+OTHER WAY
+
+hdfs dfs -du -s -h /user/hive/warehouse/file_format.db/text_table
+
+hdfs dfs -du -s -h /user/hive/warehouse/file_format.db/seq_table
+
+hdfs dfs -du -s -h /user/hive/warehouse/file_format.db/rc_table
+
+hdfs dfs -du -s -h /user/hive/warehouse/file_format.db/prq_table
+
+hdfs dfs -du -s -h /user/hive/warehouse/file_format.db/orc_table
+
+----------------------------------------
+#Enablig Compression
+----------------------------------------
+
+Enabling compression provides performance gains in most cases and is supported for RCFile and SequenceFile tables.
+For example, to enable Snappy compression, you would specify the following additional settings when loading data through the Hive shell.
+
+SET hive.exec.compress.output=true;
+SET mapred.max.split.size=256000000;
+SET mapred.output.compression.type=BLOCK; -- block compression for sequence file
+SET mapred.output.compression.codec=org.apache.hadoop.io.compress.SnappyCodec;
+
+FROM text_table
+INSERT OVERWRITE TABLE seq_table SELECT *
+INSERT OVERWRITE TABLE rc_table SELECT *
+INSERT OVERWRITE TABLE prq_table SELECT *
+INSERT OVERWRITE TABLE orc_table SELECT *;
+------------------------------------------------------------------------------------
+------------------------------------------------------------------------------------
+
+#BUCKETING
+
+nano users.txt
+
+
+1	Amit	100	DNA
+2	Sumit	200	DNA
+3	Yadav	300	DNA
+4	Sunil	500	FCS
+5	Kranti	100	FCS
+6	Mahoor	200	FCS
+8	Chandra	500	DNA
+
+nano locations.txt
+
+1	UP
+2	BIHAR
+3	MP
+4	AP
+5	MAHARASHTRA
+6	GOA
+7	JHARKHAND
+
+CREATE TABLE users
+(
+id INT,
+name STRING,
+salary INT,
+unit STRING
+)
+ROW FORMAT DELIMITED
+FIELDS TERMINATED BY '\t';
+
+CREATE TABLE locations
+(
+id INT,
+location STRING
+)
+ROW FORMAT DELIMITED
+FIELDS TERMINATED BY '\t';
+
+
+LOAD DATA LOCAL INPATH '/home/hdoop/users.txt'
+INTO TABLE users;
+
+LOAD DATA LOCAL INPATH '/home/hdoop/locations.txt'
+INTO TABLE locations;
+
+CREATE TABLE buck_users
+(
+id INT,
+name STRING,
+salary INT,
+unit STRING
+)
+CLUSTERED BY (id)
+SORTED BY (id)
+INTO 2 BUCKETS;
+
+CREATE TABLE buck_locations
+(
+id INT,
+location STRING
+)
+CLUSTERED BY (id)
+INTO 2 BUCKETS;
+
+SET hive.enforce.bucketing=true;
+
+INSERT OVERWRITE TABLE buck_users
+SELECT * FROM users;
+
+INSERT OVERWRITE TABLE buck_locations
+SELECT * FROM locations;
+
+--View the number of files created at the table location.
+--It should be two.
+
+------------------------------------------------------------------------------------
+------------------------------------------------------------------------------------
+
+#Hive Optimiations
+
+1)use ORC/parquet file format
+2)Bucketing/partioning
+3)Broadcast join/SMB join
+
+As join requires data to be shuffled accross nodes, use filtering and projection as early as possible to reduce data before join
+
+e.g.
+instead of select * from users;
+use select name, id from users where age > 20;
+	projection		filtering
+
+4)Compress map/reduce output
+SET mapred.compress.map.output=true;
+SET mapred.output.compress=true;
+
+5)Parallel execution
+Applies to MapReduce engine only that can run in parallel, for e.g. jobs processing differant source tables before join 
+
+SET hive.exec.parallel=true
+
+5)Vectorization
+Vectoried query execution is hive feature that greatly reduces the CPU usage for typical query operations like scans, filters, aggregates and joins.
+
+Vactorized query execution stramlines the operations by processing a blobk of 1024 rows at a time (instead of one row at a time)
+
+Only works with ORCFiles
+
+SET hive.vectorized.execution.enabled=true;
+SET hive.vectorized.execution.reduce.enabled=true;
+
+6)Solve Small Files problem
+--Sometimes there are 100s of small files e.g.100KB which is very less than the block sie
+--Unnecessary blocks will be occupied
+--Unnecessary shuffle and sort will happen
+--To avoid this we have to merge the files in table on periodic basis
+--Run query ALTER TABLE TABLENAME CONCATENATE;
+--This query will merge all small files into 256 MB(Block size) file each
+------------------------------------------------------------------------------------
+------------------------------------------------------------------------------------
+#HIVE CBO(cost based optimization)
+
+CBO reduces shuffle and does below optimization
+--How to order join
+--What algorithm to use for join
+--should intermediate result persisted or should be recomputed
+--the degree of parallelism at any operator
+(no. of reducers to use)
+--Semi join selection 
+
+#below paramteters needs to be set to enable CBO
+set hive.cbo.enable=true;
+set hive.compute.query.using.stats=true;
+set hive.stats.fetch.column.stats=true
+set hive.stats.fetch.partition.stats=true;
+
+------------------------------------------------------------------------------------
+------------------------------------------------------------------------------------
+#ACID properties on HIVE tables:::
+
+TBLEPROPERTIES('transactional'='true'); --> enables ACID properties on hive table bydefault it is active in Hrotonwork sandbox
+
+#structure limitations
+1)table must be bucketed
+2)table cannot be sorted
+3)requires ORC file
+
+CREATE TABLE T(a int, b int)
+CLUSTERED BY (b) INTO 8 BUCKETS STORED AS ORC
+TBLEPROPERTIES('transactional'='true')
+
+-->Not all tables support transactional semantics
+-->Non ACID tables must be re-created
+
+------------------------------------------------------------------------------------
+------------------------------------------------------------------------------------
+
+MERGE INTO TARGET T
+USING SOURCE S ON T.ID=S.ID
+UPDATE SET T.value = S.value
+WHEN NOT MATCHED INSERT (ID,State, Value)
+VALUES(S.ID, S.State, S.Value)
+
+------------------------------------------------------------------------------------
+------------------------------------------------------------------------------------
+**Hrotonworks settings for sandbox
+
+Tez container size = 512MB
+tez.am.resource.memory.mb = 512MB
+tez.runtime.io.sort.mb = 256MB
+
+#where to see logs in hrotonworks sandbox
+cd /var/log/hive
+ls -ltr
+tail -f hiveserver2.log
+-->restart service
+copy paste entire stuff in notepad & search for error
+
+------------------------------------------------------------------------------------
+------------------------------------------------------------------------------------
+
